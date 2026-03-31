@@ -1,0 +1,72 @@
+{
+  "document_type": "invoice",
+  "document_number": "INV-2024-0042",
+  "document_date": "2024-03-15",
+  "due_date": "2024-04-14",
+  "parties": [
+    {
+      "name": "Acme Supplies Co.",
+      "role": "vendor",
+      "address": {
+        "street": "500 Commerce Blvd",
+        "city": "Chicago",
+        "state": "IL",
+        "postal_code": "60601",
+        "country": "US"
+      },
+      "email": "accounts@acmesupplies.com",
+      "phone": "+1-312-555-0199",
+      "tax_id": "36-1234567"
+    },
+    {
+      "name": "Bright Future Ltd.",
+      "role": "customer",
+      "address": {
+        "street": "88 Innovation Way",
+        "city": "Austin",
+        "state": "TX",
+        "postal_code": "78701",
+        "country": "US"
+      },
+      "email": "ap@brightfuture.io",
+      "phone": "+1-512-555-0177",
+      "tax_id": "74-7654321"
+    }
+  ],
+  "currency": "USD",
+  "subtotal": 2850.0,
+  "tax_amount": 228.0,
+  "tax_rate": 0.08,
+  "discount": 0.0,
+  "total_amount": 3078.0,
+  "line_items": [
+    {
+      "description": "Industrial Widget Model X",
+      "quantity": 10,
+      "unit": "pcs",
+      "unit_price": 150.0,
+      "total": 1500.0
+    },
+    {
+      "description": "Heavy-Duty Connector Kit",
+      "quantity": 15,
+      "unit": "pcs",
+      "unit_price": 45.0,
+      "total": 675.0
+    },
+    {
+      "description": "Premium Maintenance Bundle",
+      "quantity": 3,
+      "unit": "ea",
+      "unit_price": 225.0,
+      "total": 675.0
+    }
+  ],
+  "notes": "All prices in USD. Late payments subject to 1.5% monthly interest.",
+  "payment_terms": "Net 30",
+  "reference_numbers": [
+    "PO-2024-00887",
+    "CONTRACT-TX-009"
+  ],
+  "raw_text": null
+}

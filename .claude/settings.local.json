@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python scripts/generate_training_data.py)",
+      "Bash(.venv/Scripts/python main.py --file pdfs/input/invoice_sample.pdf)"
+    ]
+  }
+}
