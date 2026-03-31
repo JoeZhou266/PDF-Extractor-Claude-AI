@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytesseract
 from pdf2image import convert_from_path
 from PIL.Image import Image
+
+_logger = logging.getLogger(__name__)
 
 
 def extract_text_via_ocr(pdf_path: str | Path, dpi: int = 300, lang: str = "eng") -> str:
@@ -24,6 +27,7 @@ def extract_text_via_ocr(pdf_path: str | Path, dpi: int = 300, lang: str = "eng"
         FileNotFoundError: If *pdf_path* does not exist.
         RuntimeError: If Tesseract is not installed or not on PATH.
     """
+    _logger.debug("extract_text_via_ocr: start pdf_path=%s dpi=%d lang=%s", pdf_path, dpi, lang)
     path = Path(pdf_path)
     if not path.exists():
         raise FileNotFoundError(f"PDF not found: {path}")
@@ -44,4 +48,6 @@ def extract_text_via_ocr(pdf_path: str | Path, dpi: int = 300, lang: str = "eng"
             ) from exc
         pages.append(text)
 
-    return "\n".join(pages).strip()
+    result = "\n".join(pages).strip()
+    _logger.debug("extract_text_via_ocr: complete pdf_path=%s pages=%d chars=%d", pdf_path, len(pages), len(result))
+    return result

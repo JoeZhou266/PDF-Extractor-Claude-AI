@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import configparser
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -48,6 +51,7 @@ def load_config(config_path: str | Path = "config.ini") -> AppConfig:
     Returns:
         Populated :class:`AppConfig` instance.
     """
+    _logger.debug("load_config: start config_path=%s", config_path)
     parser = configparser.ConfigParser()
     parser.read(str(config_path), encoding="utf-8")
 
@@ -57,6 +61,7 @@ def load_config(config_path: str | Path = "config.ini") -> AppConfig:
     ocr_raw = get("extractor", "ocr_filename_patterns", "")
     ocr_patterns = [p.strip() for p in ocr_raw.split(",") if p.strip()]
 
+    _logger.debug("load_config: complete config_path=%s", config_path)
     return AppConfig(
         input_dir=get("paths", "input_dir", "pdfs/input"),
         output_dir=get("paths", "output_dir", "pdfs/output"),

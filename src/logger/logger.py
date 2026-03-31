@@ -6,6 +6,9 @@ import os
 from pathlib import Path
 
 
+_logger = logging.getLogger(__name__)
+
+
 def get_logger(name: str, log_dir: str = "log", log_level: str = "INFO", log_file_prefix: str = "app") -> logging.Logger:
     """Return a logger that writes to console and a daily-rotating file.
 
@@ -18,9 +21,11 @@ def get_logger(name: str, log_dir: str = "log", log_level: str = "INFO", log_fil
     Returns:
         Configured :class:`logging.Logger` instance.
     """
+    _logger.debug("get_logger: start name=%s log_level=%s log_dir=%s", name, log_level, log_dir)
     logger = logging.getLogger(name)
 
     if logger.handlers:
+        _logger.debug("get_logger: complete name=%s (reused existing logger)", name)
         return logger
 
     level = getattr(logging, log_level.upper(), logging.INFO)
@@ -52,4 +57,5 @@ def get_logger(name: str, log_dir: str = "log", log_level: str = "INFO", log_fil
     file_handler.suffix = "%Y-%m-%d"
     logger.addHandler(file_handler)
 
+    _logger.debug("get_logger: complete name=%s", name)
     return logger

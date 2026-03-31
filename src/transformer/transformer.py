@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Any
 
 import anthropic
+
+_logger = logging.getLogger(__name__)
 
 from .models import Address, DocumentOutput, LineItem, Party
 
@@ -79,12 +82,14 @@ class Transformer:
         Raises:
             EnvironmentError: If ``ANTHROPIC_API_KEY`` is not set.
         """
+        _logger.debug("Transformer.__init__: start model=%s max_tokens=%d", model, max_tokens)
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise EnvironmentError("ANTHROPIC_API_KEY environment variable is not set.")
         self._client = anthropic.Anthropic(api_key=api_key)
         self._model = model
         self._max_tokens = max_tokens
+        _logger.debug("Transformer.__init__: complete model=%s", model)
 
     def transform(self, raw_text: str) -> DocumentOutput:
         """Send *raw_text* to Claude and parse the JSON response into a :class:`DocumentOutput`.
@@ -98,6 +103,7 @@ class Transformer:
         Raises:
             ValueError: If Claude returns invalid JSON or an unexpected structure.
         """
+        _logger.debug("Transformer.transform: start raw_text_len=%d", len(raw_text))
         message = self._client.messages.create(
             model=self._model,
             max_tokens=self._max_tokens,
@@ -114,6 +120,7 @@ class Transformer:
 
         output = self._dict_to_output(data)
         output.raw_text = raw_text
+        _logger.debug("Transformer.transform: complete document_type=%s document_number=%s", output.document_type, output.document_number)
         return output
 
     # ── Private helpers ───────────────────────────────────────────────────
@@ -130,14 +137,19 @@ class Transformer:
 
     @classmethod
     def _normalise_role(cls, role: str | None) -> str | None:
+        _logger.debug("Transformer._normalise_role: start role=%s", role)
         if role is None:
+            _logger.debug("Transformer._normalise_role: complete result=None")
             return None
         lower = role.lower()
-        return cls._ROLE_ALIASES.get(lower, lower)
+        result = cls._ROLE_ALIASES.get(lower, lower)
+        _logger.debug("Transformer._normalise_role: complete role=%s result=%s", role, result)
+        return result
 
     @classmethod
     def _dict_to_output(cls, data: dict[str, Any]) -> DocumentOutput:
         """Map a raw dict (from Claude JSON) to a :class:`DocumentOutput`."""
+        _logger.debug("Transformer._dict_to_output: start keys=%s", list(data.keys()))
         parties = [
             Party(
                 name=p.get("name"),
@@ -160,6 +172,7 @@ class Transformer:
             for li in data.get("line_items", [])
         ]
         doc_type = data.get("document_type")
+        _logger.debug("Transformer._dict_to_output: complete document_type=%s parties=%d line_items=%d", doc_type, len(parties), len(line_items))
         return DocumentOutput(
             document_type=doc_type.lower() if doc_type else None,
             document_number=data.get("document_number"),
@@ -186,7 +199,9 @@ def save_output(output: DocumentOutput, output_path: str | Path) -> None:
         output: The document output dataclass instance.
         output_path: Destination file path (will be created or overwritten).
     """
+    _logger.debug("save_output: start output_path=%s", output_path)
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as fh:
         json.dump(dataclasses.asdict(output), fh, indent=2, ensure_ascii=False)
+    _logger.debug("save_output: complete output_path=%s", output_path)

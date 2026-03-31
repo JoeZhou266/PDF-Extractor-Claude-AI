@@ -19,17 +19,22 @@ class _PDFEventHandler(FileSystemEventHandler):
         super().__init__()
         self._worker = worker
         self._log = logger
+        self._log.debug("_PDFEventHandler.__init__: complete")
 
     def on_created(self, event: FileCreatedEvent) -> None:
         if not event.is_directory and str(event.src_path).lower().endswith(".pdf"):
+            self._log.debug("_PDFEventHandler.on_created: start src_path=%s", event.src_path)
             self._log.info("New PDF detected: %s", event.src_path)
             self._worker.submit(event.src_path)
+            self._log.debug("_PDFEventHandler.on_created: complete src_path=%s", event.src_path)
 
     def on_moved(self, event: FileMovedEvent) -> None:
         """Handle files moved/renamed into the watch directory."""
         if not event.is_directory and str(event.dest_path).lower().endswith(".pdf"):
+            self._log.debug("_PDFEventHandler.on_moved: start dest_path=%s", event.dest_path)
             self._log.info("PDF moved into directory: %s", event.dest_path)
             self._worker.submit(event.dest_path)
+            self._log.debug("_PDFEventHandler.on_moved: complete dest_path=%s", event.dest_path)
 
 
 class FileWatcherGateway:
@@ -57,28 +62,35 @@ class FileWatcherGateway:
         self._input_dir.mkdir(parents=True, exist_ok=True)
         self._worker = worker
         self._log = get_logger(__name__, log_dir=log_dir, log_level=log_level, log_file_prefix=log_file_prefix)
+        self._log.debug("FileWatcherGateway.__init__: start input_dir=%s", input_dir)
         self._observer: Observer | None = None
+        self._log.debug("FileWatcherGateway.__init__: complete input_dir=%s", input_dir)
 
     def start(self) -> None:
         """Process existing PDFs and start the filesystem observer."""
+        self._log.debug("FileWatcherGateway.start: start")
         self._process_existing()
         handler = _PDFEventHandler(self._worker, self._log)
         self._observer = Observer()
         self._observer.schedule(handler, str(self._input_dir), recursive=False)
         self._observer.start()
         self._log.info("File watcher started on: %s", self._input_dir)
+        self._log.debug("FileWatcherGateway.start: complete")
 
     def stop(self) -> None:
         """Stop the filesystem observer and shut down the worker pool."""
+        self._log.debug("FileWatcherGateway.stop: start")
         if self._observer:
             self._observer.stop()
             self._observer.join()
             self._log.info("File watcher stopped.")
         if self._worker:
             self._worker.shutdown(wait=True)
+        self._log.debug("FileWatcherGateway.stop: complete")
 
     def run_forever(self) -> None:
         """Block forever, polling the observer until interrupted (Ctrl-C)."""
+        self._log.debug("FileWatcherGateway.run_forever: start")
         self.start()
         try:
             while True:
@@ -87,13 +99,16 @@ class FileWatcherGateway:
             self._log.info("Shutdown signal received.")
         finally:
             self.stop()
+            self._log.debug("FileWatcherGateway.run_forever: complete")
 
     # ── Private ───────────────────────────────────────────────────────────
 
     def _process_existing(self) -> None:
         """Submit any PDF files already present in the input directory."""
+        self._log.debug("FileWatcherGateway._process_existing: start input_dir=%s", self._input_dir)
         existing = list(self._input_dir.glob("*.pdf"))
         if existing:
             self._log.info("Found %d existing PDF(s) in %s", len(existing), self._input_dir)
         for pdf in existing:
             self._worker.submit(pdf)
+        self._log.debug("FileWatcherGateway._process_existing: complete submitted=%d", len(existing))

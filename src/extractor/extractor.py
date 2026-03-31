@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import fnmatch
+import logging
 from pathlib import Path
+
+_logger = logging.getLogger(__name__)
 
 from .ocr_extractor import extract_text_via_ocr
 from .text_extractor import extract_text_from_pdf
@@ -19,9 +22,12 @@ def is_ocr_pdf(filename: str, ocr_patterns: list[str]) -> bool:
     Returns:
         ``True`` if the file should be processed with OCR.
     """
+    _logger.debug("is_ocr_pdf: start filename=%s patterns=%s", filename, ocr_patterns)
     for pattern in ocr_patterns:
         if fnmatch.fnmatch(filename.lower(), pattern.strip().lower()):
+            _logger.debug("is_ocr_pdf: complete filename=%s result=True matched_pattern=%s", filename, pattern)
             return True
+    _logger.debug("is_ocr_pdf: complete filename=%s result=False", filename)
     return False
 
 
@@ -45,15 +51,19 @@ def extract_text(
     Returns:
         Extracted text string.
     """
+    _logger.debug("extract_text: start pdf_path=%s ocr_dpi=%d ocr_lang=%s", pdf_path, ocr_dpi, ocr_lang)
     path = Path(pdf_path)
     patterns = ocr_patterns or []
 
     if is_ocr_pdf(path.name, patterns):
+        _logger.debug("extract_text: complete pdf_path=%s strategy=ocr_pattern_match", pdf_path)
         return extract_text_via_ocr(path, dpi=ocr_dpi, lang=ocr_lang)
 
     try:
         text = extract_text_from_pdf(path)
+        _logger.debug("extract_text: complete pdf_path=%s strategy=text chars=%d", pdf_path, len(text))
         return text
     except ValueError:
         # No selectable text — fall back to OCR
+        _logger.debug("extract_text: complete pdf_path=%s strategy=ocr_fallback", pdf_path)
         return extract_text_via_ocr(path, dpi=ocr_dpi, lang=ocr_lang)

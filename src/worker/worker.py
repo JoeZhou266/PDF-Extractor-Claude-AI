@@ -60,10 +60,12 @@ class ProcessingWorker:
         self._ocr_lang = ocr_lang
         self._on_complete = on_complete
         self._log = get_logger(__name__, log_dir=log_dir, log_level=log_level, log_file_prefix=log_file_prefix)
+        self._log.debug("ProcessingWorker.__init__: start thread_pool_size=%d output_dir=%s", thread_pool_size, output_dir)
         self._executor = ThreadPoolExecutor(max_workers=thread_pool_size)
 
         for d in (self._output_dir, self._processed_dir, self._error_dir):
             d.mkdir(parents=True, exist_ok=True)
+        self._log.debug("ProcessingWorker.__init__: complete thread_pool_size=%d", thread_pool_size)
 
     def submit(self, pdf_path: str | Path) -> Future:
         """Submit a PDF file for asynchronous processing.
@@ -74,7 +76,10 @@ class ProcessingWorker:
         Returns:
             A :class:`~concurrent.futures.Future` for the processing job.
         """
-        return self._executor.submit(self._process, Path(pdf_path))
+        self._log.debug("ProcessingWorker.submit: start pdf_path=%s", pdf_path)
+        future = self._executor.submit(self._process, Path(pdf_path))
+        self._log.debug("ProcessingWorker.submit: complete pdf_path=%s", pdf_path)
+        return future
 
     def shutdown(self, wait: bool = True) -> None:
         """Shut down the thread pool.
@@ -82,12 +87,15 @@ class ProcessingWorker:
         Args:
             wait: If True, block until all pending jobs complete.
         """
+        self._log.debug("ProcessingWorker.shutdown: start wait=%s", wait)
         self._executor.shutdown(wait=wait)
+        self._log.debug("ProcessingWorker.shutdown: complete")
 
     # ── Private ───────────────────────────────────────────────────────────
 
     def _process(self, pdf_path: Path) -> None:
         """Worker task: extract → transform → save → move PDF."""
+        self._log.debug("ProcessingWorker._process: start pdf_path=%s", pdf_path.name)
         self._log.info("Processing started: %s", pdf_path.name)
         try:
             text = extract_text(
@@ -114,5 +122,6 @@ class ProcessingWorker:
                 self._log.exception("Could not move failed PDF to error dir: %s", pdf_path.name)
 
         finally:
+            self._log.debug("ProcessingWorker._process: complete pdf_path=%s", pdf_path.name)
             if self._on_complete:
                 self._on_complete(pdf_path)
