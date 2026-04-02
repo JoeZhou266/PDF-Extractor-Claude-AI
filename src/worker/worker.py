@@ -60,6 +60,15 @@ class ProcessingWorker:
         self._ocr_lang = ocr_lang
         self._on_complete = on_complete
         self._log = get_logger(__name__, log_dir=log_dir, log_level=log_level, log_file_prefix=log_file_prefix)
+        # Configure loggers for transformer/extractor modules (which use bare logging.getLogger)
+        # so they share the same level and handlers as the worker.
+        for _module in (
+            "src.transformer.transformer",
+            "src.extractor.extractor",
+            "src.extractor.text_extractor",
+            "src.extractor.ocr_extractor",
+        ):
+            get_logger(_module, log_dir=log_dir, log_level=log_level, log_file_prefix=log_file_prefix)
         self._log.debug("ProcessingWorker.__init__: start thread_pool_size=%d output_dir=%s", thread_pool_size, output_dir)
         self._executor = ThreadPoolExecutor(max_workers=thread_pool_size)
 
@@ -96,7 +105,6 @@ class ProcessingWorker:
     def _process(self, pdf_path: Path) -> None:
         """Worker task: extract → transform → save → move PDF."""
         self._log.debug("ProcessingWorker._process: start pdf_path=%s", pdf_path.name)
-        self._log.info("Processing started: %s", pdf_path.name)
         try:
             text = extract_text(
                 pdf_path,
@@ -111,7 +119,6 @@ class ProcessingWorker:
 
             dest = self._processed_dir / pdf_path.name
             shutil.move(str(pdf_path), dest)
-            self._log.info("Processing complete: %s → %s", pdf_path.name, json_name)
 
         except Exception:
             self._log.exception("Processing failed: %s", pdf_path.name)
